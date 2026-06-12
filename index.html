@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Kasir - Sembako Makmur</title> <!-- Menyamar sebagai Aplikasi Kasir -->
+    <title>POS Kasir - Sembako Makmur</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -49,21 +48,10 @@
                         </div>
                     </div>
                     <div class="pos-summary">
-                        <div class="pos-summary-row">
-                            <span>Subtotal</span>
-                            <span id="pos-subtotal">Rp 0</span>
-                        </div>
-                        <div class="pos-summary-row" style="color:#22c55e;">
-                            <span>Diskon</span>
-                            <span id="pos-discount">- Rp 0</span>
-                        </div>
-                        <div class="pos-summary-row total">
-                            <span>TOTAL</span>
-                            <span id="pos-total">Rp 0</span>
-                        </div>
-                        <button class="pos-pay-btn" onclick="posPay()">
-                            <i class="ph ph-money-wavy"></i> BAYAR (F9)
-                        </button>
+                        <div class="pos-summary-row"><span>Subtotal</span><span id="pos-subtotal">Rp 0</span></div>
+                        <div class="pos-summary-row" style="color:#22c55e;"><span>Diskon</span><span id="pos-discount">- Rp 0</span></div>
+                        <div class="pos-summary-row total"><span>TOTAL</span><span id="pos-total">Rp 0</span></div>
+                        <button class="pos-pay-btn" onclick="posPay()"><i class="ph ph-money-wavy"></i> BAYAR (F9)</button>
                     </div>
                 </div>
             </div>
@@ -84,7 +72,7 @@
         </div>
     </div>
 
-    <!-- ====== LOGIN VIEW (Default tersembunyi) ====== -->
+    <!-- ====== LOGIN VIEW ====== -->
     <div id="login-view" style="display:none;">
         <div class="login-box">
             <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="ph ph-lock-key"></i></div>
@@ -94,7 +82,7 @@
             <button class="btn btn-primary" style="width:100%" onclick="doLogin()">MASUK</button>
             <p id="login-msg" style="margin-top:1rem; color: var(--danger); font-size:0.9rem; min-height:1.2rem;"></p>
             <div style="margin-top: 1.5rem; text-align: center;">
-                <a href="https://catatan.balanja.co.id/ku/" target="_blank" class="login-footer-link" style="display:inline-flex; align-items:center; gap:0.5rem; text-decoration:none; color:var(--text-light); font-size:0.85rem; font-weight:600; transition: color 0.2s;">
+                <a href="https://catatan.balanja.co.id/ku/" target="_blank" style="display:inline-flex; align-items:center; gap:0.5rem; text-decoration:none; color:var(--text-light); font-size:0.85rem; font-weight:600;">
                     <i class="ph ph-book-open"></i> Tulis Jurnal
                 </a>
             </div>
@@ -129,14 +117,8 @@
                     <button id="cancel-edit" class="btn btn-sm btn-danger" style="display:none;" onclick="resetForm()">Batal</button>
                 </div>
                 <div class="meta-inputs">
-                    <div>
-                        <label style="font-size:0.75rem; font-weight:700;">Periode</label>
-                        <input type="month" id="input-periode" class="form-control" style="width:100%">
-                    </div>
-                    <div>
-                        <label style="font-size:0.75rem; font-weight:700;">Nama</label>
-                        <input type="text" id="input-nama" class="form-control" style="width:100%" placeholder="Nama Lengkap...">
-                    </div>
+                    <div><label style="font-size:0.75rem; font-weight:700;">Periode</label><input type="month" id="input-periode" class="form-control" style="width:100%"></div>
+                    <div><label style="font-size:0.75rem; font-weight:700;">Nama</label><input type="text" id="input-nama" class="form-control" style="width:100%" placeholder="Nama Lengkap..."></div>
                 </div>
                 <div id="dynamic-tabs" class="cat-tabs"></div>
                 <div id="dynamic-items"></div>
@@ -145,127 +127,44 @@
                     <div class="live-total-value" id="live-total">Rp 0</div>
                 </div>
                 <div style="margin-top: 2rem;">
-                    <button id="btn-submit" class="btn btn-primary" style="width:100%" onclick="submitData()">
-                        <i class="ph ph-floppy-disk"></i> Simpan Data
-                    </button>
+                    <button id="btn-submit" class="btn btn-primary" style="width:100%" onclick="submitData()"><i class="ph ph-floppy-disk"></i> Simpan Data</button>
                 </div>
             </div>
         </div>
 
         <div id="view-data" class="view-section">
             <div class="filter-container">
-                <div>
-                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Periode</label>
-                    <input type="month" id="filter-data-periode" class="form-control" onchange="renderDataTable()">
-                </div>
-                <div id="filter-desa-container" style="display:none;">
-                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Desa</label>
-                    <select id="filter-data-desa" class="form-control" onchange="renderDataTable()">
-                        <option value="">Semua Desa</option>
-                    </select>
-                </div>
-                <button class="btn btn-sm" style="border:1px solid #ddd; background:white;" onclick="fetchData()">
-                    <i class="ph ph-arrows-clockwise"></i> Refresh
-                </button>
+                <div><label style="font-size:0.75rem; font-weight:700; display:block;">Filter Periode</label><input type="month" id="filter-data-periode" class="form-control" onchange="renderDataTable()"></div>
+                <div id="filter-desa-container" style="display:none;"><label style="font-size:0.75rem; font-weight:700; display:block;">Filter Desa</label><select id="filter-data-desa" class="form-control" onchange="renderDataTable()"><option value="">Semua Desa</option></select></div>
+                <button class="btn btn-sm" style="border:1px solid #ddd; background:white;" onclick="fetchData()"><i class="ph ph-arrows-clockwise"></i> Refresh</button>
             </div>
             <div class="table-card">
-                <table id="table-transaksi">
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Periode</th>
-                            <th>Nama</th>
-                            <th>Ds/Klp</th>
-                            <th>Total</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body-data"></tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="4" style="text-align:right">GRAND TOTAL</td>
-                            <td id="grand-total-data" style="color:var(--accent)">Rp 0</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <table id="table-transaksi"><thead><tr><th>Tanggal</th><th>Periode</th><th>Nama</th><th>Ds/Klp</th><th>Total</th><th>Aksi</th></tr></thead><tbody id="table-body-data"></tbody><tfoot><tr><td colspan="4" style="text-align:right">GRAND TOTAL</td><td id="grand-total-data" style="color:var(--accent)">Rp 0</td><td></td></tr></tfoot></table>
             </div>
         </div>
 
         <div id="view-rekap" class="view-section">
             <div class="filter-container">
-                <div>
-                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Periode</label>
-                    <input type="month" id="filter-rekap-periode" class="form-control" onchange="renderRecapTable()">
-                </div>
-                <div id="filter-desa-rekap-container" style="display:none;">
-                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Desa</label>
-                    <select id="filter-rekap-desa" class="form-control" onchange="renderRecapTable()">
-                        <option value="">Semua Desa</option>
-                    </select>
-                </div>
-                <button class="btn btn-success" onclick="downloadExcel()">
-                    <i class="ph ph-file-xls"></i> Download Excel
-                </button>
+                <div><label style="font-size:0.75rem; font-weight:700; display:block;">Filter Periode</label><input type="month" id="filter-rekap-periode" class="form-control" onchange="renderRecapTable()"></div>
+                <div id="filter-desa-rekap-container" style="display:none;"><label style="font-size:0.75rem; font-weight:700; display:block;">Filter Desa</label><select id="filter-rekap-desa" class="form-control" onchange="renderRecapTable()"><option value="">Semua Desa</option></select></div>
+                <button class="btn btn-success" onclick="downloadExcel()"><i class="ph ph-file-xls"></i> Download Excel</button>
             </div>
             <div class="table-card">
-                <table id="table-rekap-data">
-                    <thead>
-                        <tr>
-                            <th>Item Tagihan</th>
-                            <th style="text-align:right">Realisasi (Bln Ini)</th>
-                            <th style="text-align:right">Total YTD</th>
-                            <th style="text-align:right">Target</th>
-                            <th width="150">Pencapaian</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body-rekap"></tbody>
-                    <tfoot>
-                        <tr style="background: #f8fafc; font-weight: bold;">
-                            <td colspan="4" style="text-align:right">TOTAL REALISASI BULAN INI</td>
-                            <td id="grand-total-rekap" style="text-align:right; color:var(--success)">Rp 0</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                <table id="table-rekap-data"><thead><tr><th>Item Tagihan</th><th style="text-align:right">Realisasi (Bln Ini)</th><th style="text-align:right">Total YTD</th><th style="text-align:right">Target</th><th width="150">Pencapaian</th></tr></thead><tbody id="table-body-rekap"></tbody><tfoot><tr style="background: #f8fafc; font-weight: bold;"><td colspan="4" style="text-align:right">TOTAL REALISASI BULAN INI</td><td id="grand-total-rekap" style="text-align:right; color:var(--success)">Rp 0</td></tr></tfoot></table>
             </div>
         </div>
 
         <div id="view-config" class="view-section">
             <div class="form-card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
-                    <h3>Kelola Item Tagihan</h3>
-                    <button class="btn btn-primary btn-sm" onclick="openConfigModal()">+ Tambah Item</button>
-                </div>
-                <div class="table-card">
-                    <table id="table-config">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Kategori</th>
-                                <th>Label Item</th>
-                                <th>Tipe</th>
-                                <th>Akses (Kelompok)</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body-config"></tbody>
-                    </table>
-                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:1rem;"><h3>Kelola Item Tagihan</h3><button class="btn btn-primary btn-sm" onclick="openConfigModal()">+ Tambah Item</button></div>
+                <div class="table-card"><table id="table-config"><thead><tr><th>ID</th><th>Kategori</th><th>Label Item</th><th>Tipe</th><th>Akses</th><th>Aksi</th></tr></thead><tbody id="table-body-config"></tbody></table></div>
             </div>
         </div>
 
         <div id="view-targets" class="view-section">
             <div class="form-card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                    <h3>Input Target Anggaran</h3>
-                    <button class="btn btn-sm" onclick="fetchData()"><i class="ph ph-arrows-clockwise"></i> Reload</button>
-                </div>
-                <div class="table-card">
-                    <table id="table-targets">
-                        <thead id="thead-targets"></thead>
-                        <tbody id="tbody-targets"></tbody>
-                    </table>
-                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;"><h3>Input Target Anggaran</h3><button class="btn btn-sm" onclick="fetchData()"><i class="ph ph-arrows-clockwise"></i> Reload</button></div>
+                <div class="table-card"><table id="table-targets"><thead id="thead-targets"></thead><tbody id="tbody-targets"></tbody></table></div>
                 <small style="color:var(--text-light); display:block; margin-top:1rem;">*Klik pada kotak angka untuk mengedit.</small>
             </div>
         </div>
@@ -273,9 +172,9 @@
 
     <div id="toast" class="toast">Notifikasi</div>
 
-    <!-- FLOATING PANIC BUTTON -->
+    <!-- FLOATING PANIC BUTTON (Ikon diganti jadi Toko agar mirip tombol navigasi kasir) -->
     <div id="panic-btn" onclick="hideToFake()">
-        <i class="ph ph-house"></i>
+        <i class="ph ph-storefront"></i>
     </div>
 
     <!-- MODAL CONFIG -->
@@ -287,23 +186,17 @@
             <div style="margin-bottom:1rem;"><label class="label-sm">Kode Kategori</label><input type="text" id="cfg-cat-code" class="form-control"></div>
             <div style="margin-bottom:1rem;"><label class="label-sm">Judul Kategori</label><input type="text" id="cfg-cat-title" class="form-control"></div>
             <div style="margin-bottom:1rem;"><label class="label-sm">Label Item</label><input type="text" id="cfg-item-label" class="form-control"></div>
-            <div style="margin-bottom:1rem;"><label class="label-sm">Tipe</label>
-                <select id="cfg-tipe" class="form-control"><option value="Bulanan">Bulanan</option><option value="Tahunan">Tahunan</option></select>
-            </div>
+            <div style="margin-bottom:1rem;"><label class="label-sm">Tipe</label><select id="cfg-tipe" class="form-control"><option value="Bulanan">Bulanan</option><option value="Tahunan">Tahunan</option></select></div>
             <div style="margin-bottom:1rem;"><label class="label-sm">Hak Akses Kelompok</label><input type="text" id="cfg-groups" class="form-control"></div>
-            
             <div style="margin-bottom:1rem; padding:1rem; background:#f0fdf4; border:1px dashed #22c55e; border-radius:8px;">
                 <label style="font-weight:700; color:#15803d;">FITUR PEMBAGIAN OTOMATIS (SPLIT)</label>
-                <div style="margin-top:0.5rem;">
-                    <input type="checkbox" id="cfg-is-split"> <label for="cfg-is-split">Aktifkan Split?</label>
-                </div>
+                <div style="margin-top:0.5rem;"><input type="checkbox" id="cfg-is-split"> <label for="cfg-is-split">Aktifkan Split?</label></div>
                 <div id="split-inputs" style="display:none; grid-template-columns: repeat(3, 1fr); gap:0.5rem; margin-top:0.5rem;">
-                    <input type="number" id="cfg-split-kel" class="form-control" placeholder="% Kelompok" value="0">
+                    <input type="number" id="cfg-split-kel" class="form-control" placeholder="% Kel" value="0">
                     <input type="number" id="cfg-split-desa" class="form-control" placeholder="% Desa" value="0">
                     <input type="number" id="cfg-split-dah" class="form-control" placeholder="% Daerah" value="0">
                 </div>
             </div>
-
             <div style="display:flex; gap:1rem; margin-top:1.5rem;">
                 <button class="btn btn-primary" style="flex:1" onclick="saveConfig()">Simpan</button>
                 <button class="btn" style="flex:1; background:#e2e8f0;" onclick="closeConfigModal()">Batal</button>
