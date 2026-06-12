@@ -3,8 +3,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyo65StO07OygmbXGwFz
 
 // --- KONFIGURASI SESI & KODE RAHASIA ---
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 Jam
-const SECRET_CODE = "buka";        // Ketik ini di keyboard untuk membuka aplikasi asli
-const SECRET_TAP_COUNT = 7;        // Jumlah tap pada header untuk membuka (Mobile)
+const SECRET_CODE = "buka";        // Ketik ini di keyboard desktop untuk membuka
+const SECRET_TAP_COUNT = 7;        // Jumlah tap di header untuk membuka (Mobile)
 
 // --- STATE GLOBAL APLIKASI ASLI ---
 let user = null;
@@ -22,6 +22,7 @@ let secretBuffer = "";
 let secretTimer = null;
 let tapCount = 0;
 let tapTimer = null;
+let lastRevealTime = 0; // PERBAIKAN BUG: Mencegah shake detection bentrok dengan gerakan tap
 
 // --- DATABASE PRODUK KASIR (FAKE) ---
 const POS_PRODUCTS = [
@@ -208,7 +209,7 @@ function renderPosCart() {
 
 function calculatePosTotal() {
     const subtotal = posCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const discount = subtotal > 100000 ? Math.round(subtotal * 0.05) : 0; // Diskon fiktif 5% jika > 100rb
+    const discount = subtotal > 100000 ? Math.round(subtotal * 0.05) : 0; // Diskon fiktif
     const total = subtotal - discount;
 
     document.getElementById('pos-subtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
@@ -238,7 +239,7 @@ function posPay() {
 
 function closePosReceipt() {
     document.getElementById('pos-receipt-modal').classList.remove('active');
-    posClearCart(); // Kosongkan keranjang setelah bayar
+    posClearCart();
 }
 
 
@@ -256,6 +257,7 @@ function updatePanicButton(show) {
 
 function revealApp() {
     appRevealed = true;
+    lastRevealTime = Date.now(); // Catat waktu saat ini untuk mencegah bug shake
     document.getElementById('fake-view').style.display = 'none';
     document.title = "Catatan KU - Sistem Aman";
     updatePanicButton(true);
@@ -279,10 +281,10 @@ function hideToFake() {
 function setupSecretListeners() {
     // 1. KEYBOARD: Ketik kode rahasia (Desktop)
     document.addEventListener('keydown', function(e) {
-        // F9 untuk Bayar di Fake Kasir (supaya terlihat makin asli)
+        // F9 untuk Bayar di Fake Kasir (supaya terlihat asli)
         if (!appRevealed && e.key === 'F9') { e.preventDefault(); posPay(); return; }
         
-        // Panic button: Escape → langsung sembunyikan ke fake view
+        // Panic button: Escape -> sembunyikan
         if (appRevealed && e.key === 'Escape') { e.preventDefault(); hideToFake(); return; }
 
         if (appRevealed) return;
@@ -302,7 +304,7 @@ function setupSecretListeners() {
         }
     });
 
-    // 2. TAP: Tap pada header "Kasir Sembako" 7x (Mobile & Desktop)
+    // 2. TAP: Tap pada header "Kasir Sembako" 7x (Mobile)
     const headerEl = document.getElementById('pos-header-tap');
     if (headerEl) {
         headerEl.addEventListener('click', function() {
@@ -316,11 +318,10 @@ function setupSecretListeners() {
 
     // 3. LONG PRESS: Tahan ikon toko 3 detik (Mobile friendly)
     let longPressTimer = null;
-    let longPressTriggered = false;
     const logoEl = document.getElementById('pos-logo-press');
     
     if (logoEl) {
-        const startPress = () => { if (appRevealed) return; longPressTriggered = false; longPressTimer = setTimeout(() => { longPressTriggered = true; revealApp(); }, 3000); };
+        const startPress = () => { if (appRevealed) return; longPressTimer = setTimeout(() => { revealApp(); }, 3000); };
         const endPress = () => { clearTimeout(longPressTimer); };
         
         logoEl.addEventListener('touchstart', startPress, { passive: true });
@@ -343,6 +344,9 @@ function setupShakeDetection() {
     
     window.addEventListener('devicemotion', function(e) {
         if (!appRevealed) return; // Hanya aktif di app asli
+        
+        // PERBAIKAN BUG: Beri jeda 3 detik setelah revealApp agar getaran tangan saat tap 7x tidak langsung memicu ini.
+        if (Date.now() - lastRevealTime < 3000) return; 
         
         const acc = e.accelerationIncludingGravity; 
         if (!acc) return;
