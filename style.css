@@ -67,7 +67,7 @@ tfoot td { background: #f8fafc; font-weight: 700; color: var(--primary); border-
 .progress-container { background: #e2e8f0; border-radius: 10px; height: 8px; width: 100%; margin-top: 5px; overflow: hidden; }
 .progress-bar { background: var(--success); height: 100%; transition: width 0.3s; }
 
-/* --- PANIC BUTTON (TOMBOL KEMBALI KE KASIR) --- */
+/* --- PANIC BUTTON --- */
 #panic-btn {
     display: none; position: fixed; bottom: 24px; right: 24px;
     width: 56px; height: 56px; border-radius: 50%;
@@ -80,14 +80,9 @@ tfoot td { background: #f8fafc; font-weight: 700; color: var(--primary); border-
 #panic-btn:active { transform: scale(0.85); background: #ef4444; }
 #panic-btn.visible { display: flex; }
 
-/* Ukuran lebih besar di HP agar mudah disentuh saat isi form */
 @media (max-width: 768px) {
-    #panic-btn.visible {
-        width: 64px; height: 64px; font-size: 1.8rem;
-        bottom: 28px; right: 20px;
-    }
+    #panic-btn.visible { width: 64px; height: 64px; font-size: 1.8rem; bottom: 28px; right: 20px; }
 }
-
 @media (min-width: 769px) {
     #panic-btn.visible { width: 48px; height: 48px; font-size: 1.2rem; opacity: 0.5; bottom: 30px; right: 30px; }
     #panic-btn.visible:hover { opacity: 1; }
@@ -96,24 +91,32 @@ tfoot td { background: #f8fafc; font-weight: 700; color: var(--primary); border-
 /* ============================================ */
 /* --- FAKE VIEW: SISTEM KASIR POS ------------ */
 /* ============================================ */
-#fake-view { display: flex; height: 100vh; background: #f1f5f9; overflow: hidden; }
-.pos-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
+#fake-view { display: flex; min-height: 100vh; background: #f1f5f9; }
+.pos-container { display: flex; flex-direction: column; width: 100%; }
 .pos-header { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1.5rem; background: #1e293b; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 10; }
 .pos-brand { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; }
 .pos-cashier-info { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; background: #334155; padding: 0.4rem 0.8rem; border-radius: 6px; }
-.pos-main { display: flex; flex: 1; overflow: hidden; }
+.pos-main { display: flex; flex: 1; }
+
+/* --- KATALOG DAFTAR BELANJA --- */
 .pos-catalog { flex: 2; display: flex; flex-direction: column; background: #f8fafc; border-right: 1px solid #e2e8f0; }
 .pos-search { display: flex; align-items: center; padding: 1rem 1.5rem; background: white; border-bottom: 1px solid #e2e8f0; gap: 0.75rem; }
 .pos-search i { color: #94a3b8; font-size: 1.2rem; }
 .pos-search input { border: none; outline: none; font-size: 0.95rem; width: 100%; font-family: 'Inter', sans-serif; background: transparent; }
-.pos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 1rem; padding: 1.5rem; overflow-y: auto; }
-.pos-product { background: white; border-radius: 10px; padding: 1rem; text-align: center; cursor: pointer; border: 2px solid #e2e8f0; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-.pos-product:hover { border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-.pos-product:active { transform: scale(0.95); }
-.pos-product-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-.pos-product-name { font-size: 0.8rem; font-weight: 600; color: #334155; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pos-product-price { font-size: 0.85rem; font-weight: 700; color: #0f172a; }
 
+.pos-grid { display: flex; flex-direction: column; overflow-y: auto; }
+.pos-product {
+    display: flex; align-items: center; padding: 1rem 1.5rem;
+    cursor: pointer; border-bottom: 1px solid #f1f5f9; background: white;
+    transition: all 0.2s; gap: 1rem;
+}
+.pos-product:hover { background: #f8fafc; }
+.pos-product:active { background: #e2e8f0; }
+.pos-product-name { flex: 1; font-size: 0.9rem; font-weight: 500; color: #334155; }
+.pos-product-price { font-size: 0.9rem; font-weight: 700; color: #0f172a; white-space: nowrap; margin-right: 0.5rem; }
+.pos-product-add { color: #3b82f6; font-size: 1.2rem; }
+
+/* --- SIDEBAR KERANJANG --- */
 .pos-sidebar { flex: 1; display: flex; flex-direction: column; background: white; min-width: 300px; max-width: 400px; }
 .pos-cart-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
 .pos-clear-btn { border: none; background: #fee2e2; color: #b91c1c; font-weight: 600; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; }
@@ -140,14 +143,23 @@ tfoot td { background: #f8fafc; font-weight: 700; color: var(--primary); border-
 .pos-receipt-content { background: white; padding: 2rem; border-radius: 16px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px rgba(0,0,0,0.1); }
 .pos-receipt-box { border: 2px dashed #e2e8f0; border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.85rem; color: #334155; background: #f8fafc; }
 
+/* RESPONSIVE MOBILE KASIR */
 @media (max-width: 768px) {
     .pos-main { flex-direction: column; }
-    .pos-catalog { flex: 1; border-right: none; border-bottom: 1px solid #e2e8f0; }
-    .pos-sidebar { max-width: 100%; min-width: auto; flex: 1; }
-    .pos-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.75rem; padding: 1rem; }
-    .pos-product { padding: 0.75rem; }
-    .pos-product-icon { font-size: 1.5rem; }
+    .pos-catalog { border-right: none; border-bottom: 1px solid #e2e8f0; flex: none; }
+    .pos-sidebar { max-width: 100%; min-width: auto; flex: none; }
+    .pos-cart-list { max-height: 35vh; } /* Batasi tinggi keranjang di HP agar tidak terpotong */
+    
+    .pos-cashier-info { display: none; } /* Sembunyikan info kasir di HP untuk ruang */
+    .pos-product { padding: 0.8rem 1rem; }
+    
     .item-row { grid-template-columns: 1fr; gap: 0.5rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
     .filter-container { flex-direction: column; align-items: stretch; }
     .live-total-box { flex-direction: column; gap: 0.5rem; text-align: center; }
+}
+
+/* LAYOUT FIXED UNTUK DESKTOP */
+@media (min-width: 769px) {
+    #fake-view { height: 100vh; overflow: hidden; }
+    .pos-container { height: 100%; }
 }
