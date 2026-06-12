@@ -1,17 +1,12 @@
-// --- KONFIGURASI ---
-// Ganti URL ini dengan URL Web App Google Script Anda (Deploy sebagai 'Me' atau 'Anyone')
+// --- KONFIGURASI URL WEB APP ---
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyo65StO07OygmbXGwFzoE-FVCGB9u-VfC9S9IL1uv78XxeeZpRMrLhdMlOLJqXiY2H/exec'; 
 
-// --- TAMBAHAN: KONFIGURASI SESI --- 
-// Durasi sesi aktif dalam milidetik (24 Jam)
-const SESSION_DURATION = 24 * 60 * 60 * 1000; 
+// --- KONFIGURASI SESI & KODE RAHASIA ---
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 Jam
+const SECRET_CODE = "buka";        // Ketik ini di keyboard untuk membuka aplikasi asli
+const SECRET_TAP_COUNT = 7;        // Jumlah tap pada header untuk membuka (Mobile)
 
-// --- KONFIGURASI KODE RAHASIA ---
-// Ketik kode ini di keyboard untuk mengakses aplikasi asli
-const SECRET_CODE = "buka";        // ← Ganti sesuai keinginan Anda
-const SECRET_TAP_COUNT = 7;        // ← Jumlah tap pada judul (untuk mobile)
-
-// --- STATE GLOBAL ---
+// --- STATE GLOBAL APLIKASI ASLI ---
 let user = null;
 let authToken = null;
 let configData = [];
@@ -20,14 +15,33 @@ let isEditing = false;
 let editId = null;
 let targetsData = {}; 
 
-// State untuk fake view & kode rahasia
-let fakeItems = [];
+// --- STATE GLOBAL FAKE KASIR & RAHASIA ---
+let posCart = [];
 let appRevealed = false;
 let secretBuffer = "";
 let secretTimer = null;
 let tapCount = 0;
 let tapTimer = null;
-let fakeItemIdCounter = 100;
+
+// --- DATABASE PRODUK KASIR (FAKE) ---
+const POS_PRODUCTS = [
+    { id: 1, name: "Beras Premium 5kg", price: 72000, icon: "🍚" },
+    { id: 2, name: "Minyak Goreng 2L", price: 38000, icon: "🛢️" },
+    { id: 3, name: "Gula Pasir 1kg", price: 17000, icon: "🍬" },
+    { id: 4, name: "Telur Ayam 1kg", price: 29000, icon: "🥚" },
+    { id: 5, name: "Tepung Terigu 1kg", price: 13000, icon: "🌾" },
+    { id: 6, name: "Kopi Sachet 10pcs", price: 11000, icon: "☕" },
+    { id: 7, name: "Mie Instan 1 dus", price: 110000, icon: "🍜" },
+    { id: 8, name: "Sabun Mandi 2pcs", price: 9000, icon: "🧼" },
+    { id: 9, name: "Deterjen 800g", price: 16000, icon: "🧽" },
+    { id: 10, name: "Garam 1kg", price: 5000, icon: "🧂" },
+    { id: 11, name: "Kecap Manis 275ml", price: 13000, icon: "🍶" },
+    { id: 12, name: "Susu Kental Manis", price: 14000, icon: "🥛" },
+    { id: 13, name: "Roti Tawar", price: 17000, icon: "🍞" },
+    { id: 14, name: "Air Mineral 600ml", price: 4000, icon: "💧" },
+    { id: 15, name: "Sambal Botol", price: 12000, icon: "🌶️" },
+    { id: 16, name: "Sikat Gigi 2pcs", price: 8000, icon: "🪥" }
+];
 
 // ==========================================
 // UTILITIES
@@ -83,134 +97,168 @@ function showToast(msg) {
 }
 
 // ==========================================
-// FAKE VIEW & KODE RAHASIA
+// FAKE VIEW: SISTEM KASIR POS
 // ==========================================
-
-const DEFAULT_FAKE_ITEMS = [
-    { id: 1, name: "Beras Premium 5kg", price: 72000, checked: false },
-    { id: 2, name: "Minyak Goreng 2L", price: 38000, checked: true },
-    { id: 3, name: "Gula Pasir 1kg", price: 17000, checked: true },
-    { id: 4, name: "Telur Ayam 1kg", price: 29000, checked: false },
-    { id: 5, name: "Tepung Terigu 1kg", price: 13000, checked: true },
-    { id: 6, name: "Kopi Sachet 10pcs", price: 11000, checked: false },
-    { id: 7, name: "Mie Instan 1 dus", price: 110000, checked: true },
-    { id: 8, name: "Sabun Mandi 2pcs", price: 9000, checked: false },
-    { id: 9, name: "Deterjen 800g", price: 16000, checked: true },
-    { id: 10, name: "Garam 1kg", price: 5000, checked: false },
-    { id: 11, name: "Kecap Manis 275ml", price: 13000, checked: true },
-    { id: 12, name: "Susu Kental Manis", price: 14000, checked: false },
-];
 
 function initFakeView() {
     document.getElementById('fake-view').style.display = 'flex';
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('app-view').style.display = 'none';
-    document.title = "Catatan Belanja Sembako";
+    document.title = "POS Kasir - Sembako Makmur";
+    updatePanicButton(false);
 
-    const dateEl = document.getElementById('fake-date');
-    if (dateEl) {
-        dateEl.innerText = new Date().toLocaleDateString('id-ID', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        });
-    }
+    renderPosCatalog();
+    renderPosCart();
+    updatePosClock();
+    setInterval(updatePosClock, 60000); // Update jam tiap menit
+}
 
-    const saved = localStorage.getItem('belanja_list');
-    if (saved) {
-        try {
-            fakeItems = JSON.parse(saved);
-            fakeItemIdCounter = Math.max(...fakeItems.map(i => i.id), 100) + 1;
-        } catch(e) {
-            fakeItems = JSON.parse(JSON.stringify(DEFAULT_FAKE_ITEMS));
-        }
-    } else {
-        fakeItems = JSON.parse(JSON.stringify(DEFAULT_FAKE_ITEMS));
-    }
-
-    renderFakeList();
-
-    const itemInput = document.getElementById('fake-new-item');
-    const priceInput = document.getElementById('fake-new-price');
-    if (itemInput) itemInput.addEventListener('keydown', e => { if(e.key === 'Enter') fakeAddItem(); });
-    if (priceInput) priceInput.addEventListener('keydown', e => { if(e.key === 'Enter') fakeAddItem(); });
-
-    if (priceInput) {
-        priceInput.addEventListener('input', function() {
-            let val = this.value.replace(/[^0-9]/g, '');
-            this.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        });
+function updatePosClock() {
+    const el = document.getElementById('pos-clock');
+    if(el) {
+        const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        el.innerText = dateStr + ' - ' + timeStr;
     }
 }
 
-function renderFakeList() {
-    const container = document.getElementById('fake-list');
+function renderPosCatalog() {
+    const container = document.getElementById('pos-grid');
+    const searchVal = (document.getElementById('pos-search-input')?.value || '').toLowerCase();
     if (!container) return;
+    
+    const filtered = POS_PRODUCTS.filter(p => p.name.toLowerCase().includes(searchVal));
+    
     container.innerHTML = '';
+    if(filtered.length === 0) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:#94a3b8; padding:2rem;">Produk tidak ditemukan</div>';
+        return;
+    }
 
-    fakeItems.forEach(item => {
+    filtered.forEach(prod => {
         const div = document.createElement('div');
-        div.className = `fake-item ${item.checked ? 'checked' : ''}`;
+        div.className = 'pos-product';
+        div.onclick = () => addToPosCart(prod.id);
         div.innerHTML = `
-            <div class="fake-checkbox ${item.checked ? 'checked' : ''}" onclick="toggleFakeItem(${item.id})"></div>
-            <span class="fake-item-name">${item.name}</span>
-            <span class="fake-item-price">Rp ${item.price.toLocaleString('id-ID')}</span>
-            <button class="fake-item-del" onclick="deleteFakeItem(${item.id})">&times;</button>
+            <div class="pos-product-icon">${prod.icon}</div>
+            <div class="pos-product-name">${prod.name}</div>
+            <div class="pos-product-price">Rp ${prod.price.toLocaleString('id-ID')}</div>
         `;
         container.appendChild(div);
     });
-
-    updateFakeTotal();
-    saveFakeList();
 }
 
-function toggleFakeItem(id) {
-    const item = fakeItems.find(i => i.id === id);
-    if (item) item.checked = !item.checked;
-    renderFakeList();
+function addToPosCart(productId) {
+    const product = POS_PRODUCTS.find(p => p.id === productId);
+    if (!product) return;
+
+    const existing = posCart.find(item => item.id === productId);
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        posCart.push({ ...product, qty: 1 });
+    }
+    renderPosCart();
 }
 
-function deleteFakeItem(id) {
-    fakeItems = fakeItems.filter(i => i.id !== id);
-    renderFakeList();
+function updatePosQty(productId, delta) {
+    const item = posCart.find(i => i.id === productId);
+    if (!item) return;
+
+    item.qty += delta;
+    if (item.qty <= 0) {
+        posCart = posCart.filter(i => i.id !== productId);
+    }
+    renderPosCart();
 }
 
-function fakeAddItem() {
-    const nameInput = document.getElementById('fake-new-item');
-    const priceInput = document.getElementById('fake-new-price');
-    const name = nameInput.value.trim();
-    const priceRaw = priceInput.value.replace(/[^0-9]/g, '');
-    const price = parseInt(priceRaw) || 0;
+function posClearCart() {
+    posCart = [];
+    renderPosCart();
+}
 
-    if (!name) return;
+function renderPosCart() {
+    const container = document.getElementById('pos-cart-list');
+    if (!container) return;
 
-    fakeItems.push({
-        id: fakeItemIdCounter++,
-        name: name,
-        price: price,
-        checked: false
+    if (posCart.length === 0) {
+        container.innerHTML = `<div class="pos-empty-cart"><i class="ph ph-shopping-bag-open" style="font-size:3rem; opacity:0.3;"></i><p>Belum ada item</p></div>`;
+    } else {
+        container.innerHTML = '';
+        posCart.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'pos-cart-item';
+            div.innerHTML = `
+                <div class="pos-item-details">
+                    <div class="pos-item-name">${item.name}</div>
+                    <div class="pos-item-price">Rp ${item.price.toLocaleString('id-ID')}</div>
+                </div>
+                <div class="pos-item-qty">
+                    <button onclick="updatePosQty(${item.id}, -1)">-</button>
+                    <span>${item.qty}</span>
+                    <button onclick="updatePosQty(${item.id}, 1)">+</button>
+                </div>
+                <div class="pos-item-total">Rp ${(item.price * item.qty).toLocaleString('id-ID')}</div>
+            `;
+            container.appendChild(div);
+        });
+    }
+    calculatePosTotal();
+}
+
+function calculatePosTotal() {
+    const subtotal = posCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const discount = subtotal > 100000 ? Math.round(subtotal * 0.05) : 0; // Diskon fiktif 5% jika > 100rb
+    const total = subtotal - discount;
+
+    document.getElementById('pos-subtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
+    document.getElementById('pos-discount').innerText = `- Rp ${discount.toLocaleString('id-ID')}`;
+    document.getElementById('pos-total').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+}
+
+function posPay() {
+    const total = posCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    if (total === 0) return;
+
+    const discount = total > 100000 ? Math.round(total * 0.05) : 0;
+    const finalTotal = total - discount;
+
+    document.getElementById('receipt-total-display').innerText = `Rp ${finalTotal.toLocaleString('id-ID')}`;
+    
+    const receiptDetails = document.getElementById('receipt-details');
+    let strukHtml = '';
+    posCart.forEach(item => {
+        strukHtml += `${item.name} (${item.qty}x)  Rp ${(item.price*item.qty).toLocaleString('id-ID')}<br>`;
     });
+    strukHtml += `<br>-----------------------------<br>Subtotal: Rp ${total.toLocaleString('id-ID')}<br>Diskon: - Rp ${discount.toLocaleString('id-ID')}<br><b>TOTAL: Rp ${finalTotal.toLocaleString('id-ID')}</b>`;
+    receiptDetails.innerHTML = strukHtml;
 
-    nameInput.value = '';
-    priceInput.value = '';
-    nameInput.focus();
-    renderFakeList();
+    document.getElementById('pos-receipt-modal').classList.add('active');
 }
 
-function updateFakeTotal() {
-    const total = fakeItems.reduce((sum, item) => sum + item.price, 0);
-    const el = document.getElementById('fake-total-value');
-    if (el) el.innerText = `Rp ${total.toLocaleString('id-ID')}`;
+function closePosReceipt() {
+    document.getElementById('pos-receipt-modal').classList.remove('active');
+    posClearCart(); // Kosongkan keranjang setelah bayar
 }
 
-function saveFakeList() {
-    localStorage.setItem('belanja_list', JSON.stringify(fakeItems));
-}
 
-// --- FUNGSI REVEAL & HIDE ---
+// ==========================================
+// REVEAL / HIDE & KODE RAHASIA
+// ==========================================
+
+function updatePanicButton(show) {
+    const btn = document.getElementById('panic-btn');
+    if (btn) {
+        if (show) btn.classList.add('visible');
+        else btn.classList.remove('visible');
+    }
+}
 
 function revealApp() {
     appRevealed = true;
     document.getElementById('fake-view').style.display = 'none';
     document.title = "Catatan KU - Sistem Aman";
+    updatePanicButton(true);
     checkSession(); // Akan menampilkan login-view atau app-view
 }
 
@@ -219,30 +267,33 @@ function hideToFake() {
     document.getElementById('fake-view').style.display = 'flex';
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('app-view').style.display = 'none';
-    document.title = "Catatan Belanja Sembako";
+    document.title = "POS Kasir - Sembako Makmur";
     secretBuffer = "";
+    updatePanicButton(false);
+    
+    // Tutup modal config jika terbuka
+    const configModal = document.getElementById('config-modal');
+    if (configModal) configModal.style.display = 'none';
 }
 
-// --- LISTENER KODE RAHASIA ---
-
 function setupSecretListeners() {
-    // 1. Keyboard shortcut (ketik kode rahasia)
+    // 1. KEYBOARD: Ketik kode rahasia (Desktop)
     document.addEventListener('keydown', function(e) {
+        // F9 untuk Bayar di Fake Kasir (supaya terlihat makin asli)
+        if (!appRevealed && e.key === 'F9') { e.preventDefault(); posPay(); return; }
+        
         // Panic button: Escape → langsung sembunyikan ke fake view
-        if (appRevealed && e.key === 'Escape') {
-            hideToFake();
-            return;
-        }
+        if (appRevealed && e.key === 'Escape') { e.preventDefault(); hideToFake(); return; }
 
         if (appRevealed) return;
 
-        // Jika sedang fokus di input/textarea, JANGAN deteksi
         const tag = document.activeElement.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
         clearTimeout(secretTimer);
         secretBuffer += e.key.toLowerCase();
 
+        // Reset buffer setelah 2 detik tidak mengetik
         secretTimer = setTimeout(() => { secretBuffer = ""; }, 2000);
 
         if (secretBuffer.includes(SECRET_CODE.toLowerCase())) {
@@ -251,23 +302,69 @@ function setupSecretListeners() {
         }
     });
 
-    // 2. Tap pada judul (untuk mobile)
-    const headerEl = document.getElementById('fake-header-tap');
+    // 2. TAP: Tap pada header "Kasir Sembako" 7x (Mobile & Desktop)
+    const headerEl = document.getElementById('pos-header-tap');
     if (headerEl) {
         headerEl.addEventListener('click', function() {
             if (appRevealed) return;
             tapCount++;
             clearTimeout(tapTimer);
-
             tapTimer = setTimeout(() => { tapCount = 0; }, 3000);
-
-            if (tapCount >= SECRET_TAP_COUNT) {
-                tapCount = 0;
-                revealApp();
-            }
+            if (tapCount >= SECRET_TAP_COUNT) { tapCount = 0; revealApp(); }
         });
     }
+
+    // 3. LONG PRESS: Tahan ikon toko 3 detik (Mobile friendly)
+    let longPressTimer = null;
+    let longPressTriggered = false;
+    const logoEl = document.getElementById('pos-logo-press');
+    
+    if (logoEl) {
+        const startPress = () => { if (appRevealed) return; longPressTriggered = false; longPressTimer = setTimeout(() => { longPressTriggered = true; revealApp(); }, 3000); };
+        const endPress = () => { clearTimeout(longPressTimer); };
+        
+        logoEl.addEventListener('touchstart', startPress, { passive: true });
+        logoEl.addEventListener('touchend', endPress);
+        logoEl.addEventListener('touchmove', endPress, { passive: true });
+        logoEl.addEventListener('mousedown', startPress);
+        logoEl.addEventListener('mouseup', endPress);
+        logoEl.addEventListener('mouseleave', endPress);
+    }
+
+    // 4. SHAKE DETECTION: Goyangkan HP untuk panic
+    setupShakeDetection();
 }
+
+function setupShakeDetection() {
+    let lastX = 0, lastY = 0, lastZ = 0; 
+    let lastUpdate = 0; let shakeCount = 0; let shakeTimer = null;
+    
+    if (!window.DeviceMotionEvent) return;
+    
+    window.addEventListener('devicemotion', function(e) {
+        if (!appRevealed) return; // Hanya aktif di app asli
+        
+        const acc = e.accelerationIncludingGravity; 
+        if (!acc) return;
+        
+        const curTime = Date.now();
+        if ((curTime - lastUpdate) > 100) {
+            const diffTime = curTime - lastUpdate; 
+            lastUpdate = curTime;
+            const x = acc.x || 0; const y = acc.y || 0; const z = acc.z || 0;
+            const speed = Math.abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000;
+            
+            if (speed > 25) {
+                shakeCount++; 
+                clearTimeout(shakeTimer);
+                shakeTimer = setTimeout(() => { shakeCount = 0; }, 1000);
+                if (shakeCount >= 3) { shakeCount = 0; hideToFake(); }
+            }
+            lastX = x; lastY = y; lastZ = z;
+        }
+    });
+}
+
 
 // ==========================================
 // AUTHENTICATION 
@@ -284,14 +381,8 @@ function doLogin() {
         if (res.status === 'success') {
             user = res.user;
             authToken = res.token;
-
-            const sessionData = {
-                token: authToken,
-                user: user,
-                timestamp: Date.now()
-            };
+            const sessionData = { token: authToken, user: user, timestamp: Date.now() };
             localStorage.setItem('app_session', JSON.stringify(sessionData));
-
             initApp();
         } else {
             msg.innerText = res.message;
@@ -339,7 +430,7 @@ function checkSession() {
     }
 }
 
-// --- INISIALISASI APLIKASI ASLI ---
+// --- INISIALISASI APLIKASI ---
 document.addEventListener('DOMContentLoaded', () => {
     initFakeView();
     setupSecretListeners();
@@ -350,6 +441,7 @@ function initApp() {
     document.getElementById('app-view').style.display = 'block';
     document.getElementById('u-name').innerText = user.nama_admin;
     document.getElementById('u-role').innerText = `${user.role} | ${user.kelompok || user.desa || ''}`;
+    updatePanicButton(true);
     
     if(user.role === 'Daerah') {
         document.getElementById('filter-desa-container').style.display = 'block';
@@ -357,9 +449,9 @@ function initApp() {
         document.getElementById('nav-config').style.display = 'block';
         document.getElementById('nav-targets').style.display = 'block';
     }
-
     fetchConfig();
 }
+
 
 // ==========================================
 // DATA FETCHING
@@ -397,8 +489,9 @@ function fetchData() {
     });
 }
 
+
 // ==========================================
-// UI BUILDERS
+// UI BUILDERS (Aplikasi Asli)
 // ==========================================
 
 function buildForm() {
@@ -406,7 +499,8 @@ function buildForm() {
     const itemsContainer = document.getElementById('dynamic-items');
     if(!tabsContainer || !itemsContainer) return;
     
-    tabsContainer.innerHTML = ''; itemsContainer.innerHTML = '';
+    tabsContainer.innerHTML = ''; 
+    itemsContainer.innerHTML = '';
 
     const categories = {};
     configData.forEach(item => {
@@ -428,6 +522,7 @@ function buildForm() {
         const pane = document.createElement('div');
         pane.id = `pane-${code}`;
         pane.className = `cat-pane ${index === 0 ? 'active' : ''}`;
+        
         cat.items.forEach(item => {
             const row = document.createElement('div');
             row.className = 'item-row';
@@ -533,15 +628,10 @@ function renderRecapTable() {
     const selectedMonth = parseInt(selectedMonthStr);
     
     let targetIdentity;
-    if (user.role === 'Kelompok') {
-        targetIdentity = user.kelompok;
-    } else if (user.role === 'Desa') {
-        targetIdentity = user.desa;
-    } else if (user.role === 'Daerah') {
-        targetIdentity = filterDesa || "Daerah"; 
-    } else {
-        targetIdentity = "";
-    }
+    if (user.role === 'Kelompok') targetIdentity = user.kelompok;
+    else if (user.role === 'Desa') targetIdentity = user.desa;
+    else if (user.role === 'Daerah') targetIdentity = filterDesa || "Daerah"; 
+    else targetIdentity = "";
 
     const currentTargets = targetsData[targetIdentity] || {}; 
     const realisasiBlnIni = {}; 
@@ -592,16 +682,10 @@ function renderRecapTable() {
         tr.innerHTML = `
             <td>
                 <div style="font-weight:600; font-size:0.85rem;">${conf.item_label}</div>
-                <div style="font-size:0.6rem; color:#fff; background:${tipe === 'Bulanan' ? '#8b5cf6' : '#3b82f6'}; padding:1px 6px; border-radius:10px; display:inline-block; margin-top:2px;">
-                    ${tipe}
-                </div>
+                <div style="font-size:0.6rem; color:#fff; background:${tipe === 'Bulanan' ? '#8b5cf6' : '#3b82f6'}; padding:1px 6px; border-radius:10px; display:inline-block; margin-top:2px;">${tipe}</div>
             </td>
-            <td style="text-align:right; font-weight:700; color:var(--accent);">
-                Rp ${bln.toLocaleString('id-ID')}
-            </td>
-            <td style="text-align:right; font-size:0.8rem; color:var(--text-light);">
-                ${tipe === 'Bulanan' ? '-' : 'Rp ' + ytd.toLocaleString('id-ID')}
-            </td>
+            <td style="text-align:right; font-weight:700; color:var(--accent);">Rp ${bln.toLocaleString('id-ID')}</td>
+            <td style="text-align:right; font-size:0.8rem; color:var(--text-light);">${tipe === 'Bulanan' ? '-' : 'Rp ' + ytd.toLocaleString('id-ID')}</td>
             <td style="text-align:right;">
                 <div style="font-size:0.8rem; font-weight:600;">Rp ${targetVal.toLocaleString('id-ID')}</div>
                 <div style="font-size:0.55rem; color:var(--text-light); text-transform:uppercase;">${labelTarget}</div>
@@ -632,12 +716,11 @@ function renderTargetsTable() {
     tbody.innerHTML = '';
 
     if (!targetsData || Object.keys(targetsData).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem;">Belum ada data Target. Silakan tambahkan identity (Kelompok/Desa) terlebih dahulu.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem;">Belum ada data Target.</td></tr>';
         return;
     }
 
     const itemsList = configData.map(c => c.item_id);
-
     let headerHTML = '<tr><th style="position:sticky; left:0; background:#f8fafc; z-index:10;">Identitas</th>';
     itemsList.forEach(itemId => {
         const itemConf = configData.find(c => c.item_id === itemId);
@@ -657,12 +740,7 @@ function renderTargetsTable() {
             const val = dataRow[itemId] || 0; 
             rowHTML += `
                 <td style="text-align:center;">
-                    <input type="number" 
-                           class="target-input" 
-                           value="${val}" 
-                           style="width:100px; text-align:center; padding:5px; border:1px solid #ddd; border-radius:4px;"
-                           onblur="updateTarget(this, '${identity}', '${itemId}')"
-                           onchange="this.style.background='#dcfce7'; setTimeout(()=>this.style.background='white', 500)">
+                    <input type="number" class="target-input" value="${val}" style="width:100px; text-align:center; padding:5px; border:1px solid #ddd; border-radius:4px;" onblur="updateTarget(this, '${identity}', '${itemId}')" onchange="this.style.background='#dcfce7'; setTimeout(()=>this.style.background='white', 500)">
                 </td>
             `;
         });
@@ -676,19 +754,12 @@ function updateTarget(inputEl, identity, itemId) {
     const newValue = inputEl.value;
     inputEl.style.background = '#fef9c3'; 
 
-    securePost({
-        action: 'update_target',
-        identity: identity,
-        item_id: itemId,
-        value: newValue
-    })
+    securePost({ action: 'update_target', identity: identity, item_id: itemId, value: newValue })
     .then(res => {
         if(res.status === 'success') {
             inputEl.style.background = '#dcfce7'; 
             setTimeout(() => inputEl.style.background = 'white', 1000);
-            if(targetsData[identity]) {
-                targetsData[identity][itemId] = parseFloat(newValue) || 0;
-            }
+            if(targetsData[identity]) { targetsData[identity][itemId] = parseFloat(newValue) || 0; }
         } else {
             alert("Gagal menyimpan: " + res.message);
             inputEl.style.background = '#fee2e2'; 
@@ -735,7 +806,6 @@ function openConfigModal(isEdit = false) {
         document.getElementById('cfg-item-label').value = '';
         document.getElementById('cfg-tipe').value = 'Bulanan';
         document.getElementById('cfg-groups').value = '';
-        
         document.getElementById('cfg-is-split').checked = false;
         document.getElementById('split-inputs').style.display = 'none';
         document.getElementById('cfg-split-kel').value = 0;
@@ -762,10 +832,7 @@ function editConfig(id) {
 
     const isSplit = item.is_split || false;
     document.getElementById('cfg-is-split').checked = isSplit;
-    
-    const splitDiv = document.getElementById('split-inputs');
-    splitDiv.style.display = isSplit ? 'grid' : 'none';
-
+    document.getElementById('split-inputs').style.display = isSplit ? 'grid' : 'none';
     document.getElementById('cfg-split-kel').value = item.split_kel || 0;
     document.getElementById('cfg-split-desa').value = item.split_desa || 0;
     document.getElementById('cfg-split-dah').value = item.split_daerah || 0;
@@ -787,71 +854,34 @@ function saveConfig() {
     const splitDesa = parseFloat(document.getElementById('cfg-split-desa').value) || 0;
     const splitDah = parseFloat(document.getElementById('cfg-split-dah').value) || 0;
 
-    if (!itemId || !catCode || !catTitle || !itemLabel) {
-        return showToast("Lengkapi data wajib (ID, Kode, Judul, Label)!");
-    }
-
-    if (isSplit && (splitKel + splitDesa + splitDah !== 100)) {
-        return showToast("Total persentase split harus 100%!");
-    }
+    if (!itemId || !catCode || !catTitle || !itemLabel) return showToast("Lengkapi data wajib!");
+    if (isSplit && (splitKel + splitDesa + splitDah !== 100)) return showToast("Total persentase split harus 100%!");
 
     const action = oldId ? 'update_config' : 'create_config';
-    
-    const payload = {
-        action: action,
-        old_id: oldId, 
-        item_id: itemId,
-        cat_code: catCode,
-        cat_title: catTitle,
-        item_label: itemLabel,
-        tipe: tipe,
-        allowed_groups: groups || "ALL",
-        is_split: isSplit,
-        split_kel: splitKel,
-        split_desa: splitDesa,
-        split_daerah: splitDah
-    };
+    const payload = { action, old_id: oldId, item_id: itemId, cat_code: catCode, cat_title: catTitle, item_label: itemLabel, tipe, allowed_groups: groups || "ALL", is_split: isSplit, split_kel: splitKel, split_desa: splitDesa, split_daerah: splitDah };
 
     const btn = document.querySelector('#config-modal .btn-primary');
     const originalText = btn.innerText;
-    btn.innerText = "Menyimpan...";
-    btn.disabled = true;
+    btn.innerText = "Menyimpan..."; btn.disabled = true;
 
     securePost(payload)
     .then(res => {
-        if (res.status === 'success') {
-            showToast("Config berhasil disimpan!");
-            closeConfigModal();
-            fetchConfig(); 
-            renderConfigTable();
-        } else {
-            showToast("Error: " + res.message);
-        }
+        if (res.status === 'success') { showToast("Config berhasil disimpan!"); closeConfigModal(); fetchConfig(); renderConfigTable(); } 
+        else { showToast("Error: " + res.message); }
     })
-    .catch(e => {
-        console.error(e);
-        showToast("Terjadi kesalahan koneksi.");
-    })
-    .finally(() => {
-        btn.innerText = originalText;
-        btn.disabled = false;
-    });
+    .catch(e => { console.error(e); showToast("Terjadi kesalahan koneksi."); })
+    .finally(() => { btn.innerText = originalText; btn.disabled = false; });
 }
 
 function deleteConfig(id) {
     if(!confirm("Hapus item ini?")) return;
-    securePost({ action: 'delete_config', item_id: id }).then(res => {
-        if(res.status === 'success') { 
-            fetchConfig(); 
-            renderConfigTable(); 
-        }
-    });
+    securePost({ action: 'delete_config', item_id: id }).then(res => { if(res.status === 'success') { fetchConfig(); renderConfigTable(); } });
 }
 
 document.getElementById('cfg-is-split').addEventListener('change', function() {
-    const div = document.getElementById('split-inputs');
-    div.style.display = this.checked ? 'grid' : 'none';
+    document.getElementById('split-inputs').style.display = this.checked ? 'grid' : 'none';
 });
+
 
 // ==========================================
 // ACTIONS
@@ -888,33 +918,21 @@ function submitData() {
                 processedValues[key] = pDah;
 
                 let destF = targetSpecificF || configData.find(c => c.cat_code === 'F');
-                if (destF && pKel > 0) {
-                    processedValues[destF.item_id] = (processedValues[destF.item_id] || 0) + pKel;
-                }
+                if (destF && pKel > 0) { processedValues[destF.item_id] = (processedValues[destF.item_id] || 0) + pKel; }
 
                 let destE = targetSpecificE || configData.find(c => c.cat_code === 'E');
-                if (destE && pDesa > 0) {
-                    processedValues[destE.item_id] = (processedValues[destE.item_id] || 0) + pDesa;
-                }
+                if (destE && pDesa > 0) { processedValues[destE.item_id] = (processedValues[destE.item_id] || 0) + pDesa; }
             }
         });
     }
 
     btn.disabled = true; btn.innerText = "Menyimpan...";
-    const payload = {
-        action: isEditing ? 'update' : 'create',
-        id: editId, periode: periode, nama_warga: nama, values: processedValues 
-    };
+    const payload = { action: isEditing ? 'update' : 'create', id: editId, periode, nama_warga: nama, values: processedValues };
 
     securePost(payload)
     .then(res => {
-        if(res.status === 'success') {
-            showToast("Berhasil!");
-            resetForm(); fetchData();
-            if(isEditing) switchTab('data');
-        } else {
-            showToast("Error: " + res.message);
-        }
+        if(res.status === 'success') { showToast("Berhasil!"); resetForm(); fetchData(); if(isEditing) switchTab('data'); } 
+        else { showToast("Error: " + res.message); }
         btn.disabled = false; btn.innerHTML = `<i class="ph ph-floppy-disk"></i> Simpan Data`;
     })
     .catch(() => { showToast("Error Koneksi"); btn.disabled = false; });
@@ -924,14 +942,11 @@ function deleteData(id) {
     if(!confirm("Yakin ingin menghapus data ini?")) return;
     securePost({ action: 'delete', id: id })
     .then(res => {
-        if(res.status === 'success') {
-            showToast("Data dihapus");
-            fetchData(); 
-        } else {
-            showToast("Gagal: " + res.message);
-        }
+        if(res.status === 'success') { showToast("Data dihapus"); fetchData(); } 
+        else { showToast("Gagal: " + res.message); }
     });
 }
+
 
 // ==========================================
 // HELPERS
@@ -1015,6 +1030,7 @@ function editData(id) {
     switchTab('input');
 }
 
+
 // ==========================================
 // EXCEL EXPORT
 // ==========================================
@@ -1022,7 +1038,6 @@ function editData(id) {
 async function downloadExcel() {
     const filterPeriodeRaw = document.getElementById('filter-rekap-periode').value;
     const filterDesa = document.getElementById('filter-rekap-desa').value;
-
     if (!filterPeriodeRaw) return showToast("Pilih periode dulu!");
 
     const [year, month] = filterPeriodeRaw.split('-');
@@ -1032,9 +1047,7 @@ async function downloadExcel() {
     let namaKelompok = (user.role === 'Kelompok' ? user.kelompok : ".........").toUpperCase();
     let namaDesaDisplay = (user.desa || ".........").toUpperCase();
     
-    if (user.role === 'Daerah') {
-        namaDesaDisplay = filterDesa ? filterDesa.toUpperCase() : ""; 
-    }
+    if (user.role === 'Daerah') { namaDesaDisplay = filterDesa ? filterDesa.toUpperCase() : ""; }
 
     let allowedCategories = [];
     if (user.role === 'Daerah') allowedCategories = ['A', 'B', 'C', 'D'];
@@ -1068,111 +1081,66 @@ async function downloadExcel() {
             return acc + (parseFloat(vals[conf.item_id]) || 0);
         }, 0);
 
-        categorizedData[conf.cat_title].push({
-            cat_code: conf.cat_code,
-            label: conf.item_label,
-            target: parseFloat(currentTargets[conf.item_id]) || 0,
-            realisasi: realisasiBln
-        });
+        categorizedData[conf.cat_title].push({ cat_code: conf.cat_code, label: conf.item_label, target: parseFloat(currentTargets[conf.item_id]) || 0, realisasi: realisasiBln });
     });
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Laporan', { pageSetup: { paperSize: 9, orientation: 'portrait' } });
 
-    worksheet.mergeCells('A1:E1');
-    worksheet.mergeCells('A2:E2');
-    worksheet.mergeCells('A3:E3');
+    worksheet.mergeCells('A1:E1'); worksheet.mergeCells('A2:E2'); worksheet.mergeCells('A3:E3');
     
-    worksheet.getCell('A1').value = reportTitle;
-    worksheet.getCell('A1').font = { bold: true, size: 14 };
-    worksheet.getCell('A1').alignment = { horizontal: 'center' };
-
-    worksheet.getCell('A2').value = reportSubtitle;
-    worksheet.getCell('A2').font = { bold: true, size: 11 };
-    worksheet.getCell('A2').alignment = { horizontal: 'center' };
-
-    worksheet.getCell('A3').value = "PERIODE " + namaPeriode;
-    worksheet.getCell('A3').font = { bold: true, size: 11 };
-    worksheet.getCell('A3').alignment = { horizontal: 'center' };
+    worksheet.getCell('A1').value = reportTitle; worksheet.getCell('A1').font = { bold: true, size: 14 }; worksheet.getCell('A1').alignment = { horizontal: 'center' };
+    worksheet.getCell('A2').value = reportSubtitle; worksheet.getCell('A2').font = { bold: true, size: 11 }; worksheet.getCell('A2').alignment = { horizontal: 'center' };
+    worksheet.getCell('A3').value = "PERIODE " + namaPeriode; worksheet.getCell('A3').font = { bold: true, size: 11 }; worksheet.getCell('A3').alignment = { horizontal: 'center' };
 
     const headerRow = worksheet.addRow(['NO', 'URAIAN', 'TARGET', 'REALISASI', 'KETERANGAN']);
     headerRow.eachCell((cell) => {
-        cell.font = { bold: true };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
-        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-        cell.alignment = { horizontal: 'center' };
+        cell.font = { bold: true }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; cell.alignment = { horizontal: 'center' };
     });
 
-    let counter = 1;
-    let grandTotalRealisasi = 0;
-    let totalHakKelompok = 0; 
-    let totalHakDesa = 0;     
+    let counter = 1; let grandTotalRealisasi = 0; let totalHakKelompok = 0; let totalHakDesa = 0;     
 
     for (const [catTitle, items] of Object.entries(categorizedData)) {
-        const cat = configData.find(c => c.cat_title === catTitle);
-        const catCode = cat ? cat.cat_code : '';
-
-        const catRow = worksheet.addRow(['', catTitle.toUpperCase(), '', '', '']);
-        catRow.getCell(2).font = { bold: true };
+        const cat = configData.find(c => c.cat_title === catTitle); const catCode = cat ? cat.cat_code : '';
+        const catRow = worksheet.addRow(['', catTitle.toUpperCase(), '', '', '']); catRow.getCell(2).font = { bold: true };
         
         items.forEach(item => {
             grandTotalRealisasi += item.realisasi;
             if (catCode === 'F') totalHakKelompok += item.realisasi;
             if (catCode === 'E') totalHakDesa += item.realisasi;
-
             const row = worksheet.addRow([counter++, item.label, item.target, item.realisasi, ""]);
-            row.getCell(3).numFmt = '#,##0';
-            row.getCell(4).numFmt = '#,##0';
+            row.getCell(3).numFmt = '#,##0'; row.getCell(4).numFmt = '#,##0';
         });
     }
     
     const footerRow = worksheet.addRow(['', 'TOTAL KESELURUHAN', '', grandTotalRealisasi, '']);
-    footerRow.eachCell((cell) => {
-        cell.font = { bold: true };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
-    });
+    footerRow.eachCell((cell) => { cell.font = { bold: true }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } }; });
     footerRow.getCell(4).numFmt = '#,##0';
 
-    let totalYangDisetor = 0;
-    let labelSetoran = "";
-
-    if (user.role === 'Kelompok') {
-        totalYangDisetor = grandTotalRealisasi - totalHakKelompok;
-        labelSetoran = "TOTAL YANG DISETOR KE DESA";
-    } else if (user.role === 'Desa') {
-        totalYangDisetor = grandTotalRealisasi - totalHakDesa;
-        labelSetoran = "TOTAL YANG DISETOR KE DAERAH";
-    }
+    let totalYangDisetor = 0; let labelSetoran = "";
+    if (user.role === 'Kelompok') { totalYangDisetor = grandTotalRealisasi - totalHakKelompok; labelSetoran = "TOTAL YANG DISETOR KE DESA"; } 
+    else if (user.role === 'Desa') { totalYangDisetor = grandTotalRealisasi - totalHakDesa; labelSetoran = "TOTAL YANG DISETOR KE DAERAH"; }
 
     if ((user.role === 'Kelompok' || user.role === 'Desa') && totalYangDisetor > 0) {
         const setoranRow = worksheet.addRow(['', labelSetoran, '', totalYangDisetor, '']);
         setoranRow.eachCell((cell) => {
-            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
             cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
         });
-        setoranRow.getCell(4).numFmt = '#,##0';
-        setoranRow.getCell(4).alignment = { horizontal: 'center' };
+        setoranRow.getCell(4).numFmt = '#,##0'; setoranRow.getCell(4).alignment = { horizontal: 'center' };
     }
 
     worksheet.eachRow((row, rowNumber) => {
         if (rowNumber >= 5) {
             row.eachCell((cell) => {
-                if (!cell.fill || cell.fill.fgColor.argb !== 'FF0F766E') {
-                   cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-                }
-                if (cell.address.startsWith('A') || cell.address.startsWith('C') || cell.address.startsWith('D')) {
-                    cell.alignment = { horizontal: 'center' };
-                }
+                if (!cell.fill || cell.fill.fgColor.argb !== 'FF0F766E') { cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; }
+                if (cell.address.startsWith('A') || cell.address.startsWith('C') || cell.address.startsWith('D')) { cell.alignment = { horizontal: 'center' }; }
             });
         }
     });
 
-    worksheet.getColumn(1).width = 5;
-    worksheet.getColumn(2).width = 45;
-    worksheet.getColumn(3).width = 18;
-    worksheet.getColumn(4).width = 18;
-    worksheet.getColumn(5).width = 20;
+    worksheet.getColumn(1).width = 5; worksheet.getColumn(2).width = 45; worksheet.getColumn(3).width = 18; worksheet.getColumn(4).width = 18; worksheet.getColumn(5).width = 20;
 
     let fileName = (user.role === 'Kelompok' ? `Laporan_Kelompok_${namaKelompok}` : (user.role === 'Desa' ? `Laporan_Desa_${namaDesaDisplay}` : `Laporan_Daerah_Keseluruhan`)) + `_${filterPeriodeRaw}.xlsx`;
 
@@ -1180,9 +1148,7 @@ async function downloadExcel() {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    anchor.click();
+    anchor.href = url; anchor.download = fileName; anchor.click();
     window.URL.revokeObjectURL(url);
     showToast("File Excel berhasil didownload!");
 }
