@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catatan Belanja Sembako</title> <!-- Diubah untuk menyamar -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ====== FAKE VIEW: CATATAN BELANJA SEMBAKO ====== -->
+    <div id="fake-view">
+        <div class="fake-app">
+            <div class="fake-header" id="fake-header-tap">
+                <i class="ph ph-shopping-cart" style="font-size:2rem; color:#22c55e;"></i>
+                <div>
+                    <h2 style="margin:0; font-size:1.2rem; color:#1e293b;">Catatan Belanja</h2>
+                    <p style="margin:0; font-size:0.7rem; color:#94a3b8;" id="fake-date"></p>
+                </div>
+            </div>
+            <div class="fake-list" id="fake-list"></div>
+            <div class="fake-add-row">
+                <input type="text" id="fake-new-item" placeholder="Tambah item..." class="fake-input">
+                <input type="text" id="fake-new-price" placeholder="Harga" inputmode="numeric" class="fake-input" style="width:90px; text-align:right;">
+                <button class="fake-add-btn" onclick="fakeAddItem()">+</button>
+            </div>
+            <div class="fake-total">
+                <span>Total Belanja</span>
+                <span id="fake-total-value">Rp 0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== LOGIN VIEW (Default tersembunyi) ====== -->
+    <div id="login-view" style="display:none;">
+        <div class="login-box">
+            <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="ph ph-lock-key"></i></div>
+            <h2>Catatanku</h2>
+            <p style="color: var(--text-light); margin-bottom: 2rem;">Masukkan Password</p>
+            <input type="password" id="login-pass" class="login-input" placeholder="PASSWORD">
+            <button class="btn btn-primary" style="width:100%" onclick="doLogin()">MASUK</button>
+            
+            <!-- Area Pesan Error -->
+            <p id="login-msg" style="margin-top:1rem; color: var(--danger); font-size:0.9rem; min-height:1.2rem;"></p>
+
+            <!-- LINK PORTAL DI BAWAH TOMBOL LOGIN -->
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <a href="https://catatan.balanja.co.id/ku/" target="_blank" class="login-footer-link" style="display:inline-flex; align-items:center; gap:0.5rem; text-decoration:none; color:var(--text-light); font-size:0.85rem; font-weight:600; transition: color 0.2s;">
+                    <i class="ph ph-book-open"></i> Tulis Jurnal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== APP VIEW ====== -->
+    <div id="app-view">
+        <header>
+            <div class="logo"><i class="ph ph-safe-2"></i>CATATANKU</div>
+            <div class="user-profile">
+                <div style="text-align: right;">
+                    <div id="u-name" style="font-weight:600;">User</div>
+                    <div id="u-role" style="font-size:0.8rem; color:var(--text-light);">Role</div>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="doLogout()"><i class="ph ph-sign-out"></i></button>
+            </div>
+        </header>
+
+        <div class="nav-grid">
+            <div id="nav-input" class="nav-btn active" onclick="switchTab('input')"><i class="ph ph-pencil-simple"></i> Input</div>
+            <div id="nav-data" class="nav-btn" onclick="switchTab('data')"><i class="ph ph-table"></i> Transaksi</div>
+            <div id="nav-rekap" class="nav-btn" onclick="switchTab('rekap')"><i class="ph ph-chart-bar"></i> Rekap</div>
+            <div id="nav-config" class="nav-btn" style="display:none;" onclick="switchTab('config')"><i class="ph ph-gear"></i> Master Config</div>
+            <div id="nav-targets" class="nav-btn" style="display:none;" onclick="switchTab('targets')"><i class="ph ph-target"></i> Input Target</div>
+        </div>
+
+        <div id="view-input" class="view-section active">
+            <div class="form-card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
+                    <h3 id="form-title" style="margin:0">Input Baru</h3>
+                    <button id="cancel-edit" class="btn btn-sm btn-danger" style="display:none;" onclick="resetForm()">Batal</button>
+                </div>
+                <div class="meta-inputs">
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:700;">Periode</label>
+                        <input type="month" id="input-periode" class="form-control" style="width:100%">
+                    </div>
+                    <div>
+                        <label style="font-size:0.75rem; font-weight:700;">Nama</label>
+                        <input type="text" id="input-nama" class="form-control" style="width:100%" placeholder="Nama Lengkap...">
+                    </div>
+                </div>
+                <div id="dynamic-tabs" class="cat-tabs"></div>
+                <div id="dynamic-items"></div>
+                <div class="live-total-box">
+                    <div class="live-total-label">Total Input:</div>
+                    <div class="live-total-value" id="live-total">Rp 0</div>
+                </div>
+                <div style="margin-top: 2rem;">
+                    <button id="btn-submit" class="btn btn-primary" style="width:100%" onclick="submitData()">
+                        <i class="ph ph-floppy-disk"></i> Simpan Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-data" class="view-section">
+            <div class="filter-container">
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Periode</label>
+                    <input type="month" id="filter-data-periode" class="form-control" onchange="renderDataTable()">
+                </div>
+                <div id="filter-desa-container" style="display:none;">
+                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Desa</label>
+                    <select id="filter-data-desa" class="form-control" onchange="renderDataTable()">
+                        <option value="">Semua Desa</option>
+                    </select>
+                </div>
+                <button class="btn btn-sm" style="border:1px solid #ddd; background:white;" onclick="fetchData()">
+                    <i class="ph ph-arrows-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="table-card">
+                <table id="table-transaksi">
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Periode</th>
+                            <th>Nama</th>
+                            <th>Ds/Klp</th>
+                            <th>Total</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body-data"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="text-align:right">GRAND TOTAL</td>
+                            <td id="grand-total-data" style="color:var(--accent)">Rp 0</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-rekap" class="view-section">
+            <div class="filter-container">
+                <div>
+                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Periode</label>
+                    <input type="month" id="filter-rekap-periode" class="form-control" onchange="renderRecapTable()">
+                </div>
+                <div id="filter-desa-rekap-container" style="display:none;">
+                    <label style="font-size:0.75rem; font-weight:700; display:block;">Filter Desa</label>
+                    <select id="filter-rekap-desa" class="form-control" onchange="renderRecapTable()">
+                        <option value="">Semua Desa</option>
+                    </select>
+                </div>
+                <button class="btn btn-success" onclick="downloadExcel()">
+                    <i class="ph ph-file-xls"></i> Download Excel
+                </button>
+            </div>
+            <div class="table-card">
+                <table id="table-rekap-data">
+                    <thead>
+                        <tr>
+                            <th>Item Tagihan</th>
+                            <th style="text-align:right">Realisasi (Bln Ini)</th>
+                            <th style="text-align:right">Total YTD</th>
+                            <th style="text-align:right">Target</th>
+                            <th width="150">Pencapaian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body-rekap"></tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: bold;">
+                            <td colspan="4" style="text-align:right">TOTAL REALISASI BULAN INI</td>
+                            <td id="grand-total-rekap" style="text-align:right; color:var(--success)">Rp 0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-config" class="view-section">
+            <div class="form-card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
+                    <h3>Kelola Item Tagihan</h3>
+                    <button class="btn btn-primary btn-sm" onclick="openConfigModal()">+ Tambah Item</button>
+                </div>
+                <div class="table-card">
+                    <table id="table-config">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Kategori</th>
+                                <th>Label Item</th>
+                                <th>Tipe</th>
+                                <th>Akses (Kelompok)</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-config"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-targets" class="view-section">
+            <div class="form-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <h3>Input Target Anggaran</h3>
+                    <button class="btn btn-sm" onclick="fetchData()"><i class="ph ph-arrows-clockwise"></i> Reload</button>
+                </div>
+                <div class="table-card">
+                    <table id="table-targets">
+                        <thead id="thead-targets"></thead>
+                        <tbody id="tbody-targets"></tbody>
+                    </table>
+                </div>
+                <small style="color:var(--text-light); display:block; margin-top:1rem;">*Klik pada kotak angka untuk mengedit.</small>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Notifikasi</div>
+
+    <!-- MODAL CONFIG -->
+    <div id="config-modal" class="modal-overlay">
+        <div class="form-card modal-content">
+            <h3 id="modal-title-config" style="margin-top:0">Tambah Item</h3>
+            <input type="hidden" id="cfg-old-id">
+            <div style="margin-bottom:1rem;"><label class="label-sm">ID Item</label><input type="text" id="cfg-item-id" class="form-control"></div>
+            <div style="margin-bottom:1rem;"><label class="label-sm">Kode Kategori</label><input type="text" id="cfg-cat-code" class="form-control"></div>
+            <div style="margin-bottom:1rem;"><label class="label-sm">Judul Kategori</label><input type="text" id="cfg-cat-title" class="form-control"></div>
+            <div style="margin-bottom:1rem;"><label class="label-sm">Label Item</label><input type="text" id="cfg-item-label" class="form-control"></div>
+            <div style="margin-bottom:1rem;"><label class="label-sm">Tipe</label>
+                <select id="cfg-tipe" class="form-control"><option value="Bulanan">Bulanan</option><option value="Tahunan">Tahunan</option></select>
+            </div>
+            <div style="margin-bottom:1rem;"><label class="label-sm">Hak Akses Kelompok</label><input type="text" id="cfg-groups" class="form-control"></div>
+            
+            <div style="margin-bottom:1rem; padding:1rem; background:#f0fdf4; border:1px dashed #22c55e; border-radius:8px;">
+                <label style="font-weight:700; color:#15803d;">FITUR PEMBAGIAN OTOMATIS (SPLIT)</label>
+                <div style="margin-top:0.5rem;">
+                    <input type="checkbox" id="cfg-is-split"> <label for="cfg-is-split">Aktifkan Split?</label>
+                </div>
+                <div id="split-inputs" style="display:none; grid-template-columns: repeat(3, 1fr); gap:0.5rem; margin-top:0.5rem;">
+                    <input type="number" id="cfg-split-kel" class="form-control" placeholder="% Kelompok" value="0">
+                    <input type="number" id="cfg-split-desa" class="form-control" placeholder="% Desa" value="0">
+                    <input type="number" id="cfg-split-dah" class="form-control" placeholder="% Daerah" value="0">
+                </div>
+            </div>
+
+            <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                <button class="btn btn-primary" style="flex:1" onclick="saveConfig()">Simpan</button>
+                <button class="btn" style="flex:1; background:#e2e8f0;" onclick="closeConfigModal()">Batal</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
