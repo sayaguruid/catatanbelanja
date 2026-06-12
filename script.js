@@ -24,24 +24,24 @@ let tapCount = 0;
 let tapTimer = null;
 let lastRevealTime = 0; // PERBAIKAN BUG: Mencegah shake detection bentrok dengan gerakan tap
 
-// --- DATABASE PRODUK KASIR (FAKE) ---
+// --- DATABASE PRODUK KASIR (TANPA IKON) ---
 const POS_PRODUCTS = [
     { id: 1, name: "Beras Premium 5kg", price: 72000 },
-    { id: 2, name: "Minyak Goreng 2L", price: 38000, icon: "🛢️" },
-    { id: 3, name: "Gula Pasir 1kg", price: 17000, icon: "🍬" },
-    { id: 4, name: "Telur Ayam 1kg", price: 29000, icon: "🥚" },
-    { id: 5, name: "Tepung Terigu 1kg", price: 13000, icon: "🌾" },
-    { id: 6, name: "Kopi Sachet 10pcs", price: 11000, icon: "☕" },
-    { id: 7, name: "Mie Instan 1 dus", price: 110000, icon: "🍜" },
-    { id: 8, name: "Sabun Mandi 2pcs", price: 9000, icon: "🧼" },
-    { id: 9, name: "Deterjen 800g", price: 16000, icon: "🧽" },
-    { id: 10, name: "Garam 1kg", price: 5000, icon: "🧂" },
-    { id: 11, name: "Kecap Manis 275ml", price: 13000, icon: "🍶" },
-    { id: 12, name: "Susu Kental Manis", price: 14000, icon: "🥛" },
-    { id: 13, name: "Roti Tawar", price: 17000, icon: "🍞" },
-    { id: 14, name: "Air Mineral 600ml", price: 4000, icon: "💧" },
-    { id: 15, name: "Sambal Botol", price: 12000, icon: "🌶️" },
-    { id: 16, name: "Sikat Gigi 2pcs", price: 8000, icon: "🪥" }
+    { id: 2, name: "Minyak Goreng 2L", price: 38000 },
+    { id: 3, name: "Gula Pasir 1kg", price: 17000 },
+    { id: 4, name: "Telur Ayam 1kg", price: 29000 },
+    { id: 5, name: "Tepung Terigu 1kg", price: 13000 },
+    { id: 6, name: "Kopi Sachet 10pcs", price: 11000 },
+    { id: 7, name: "Mie Instan 1 dus", price: 110000 },
+    { id: 8, name: "Sabun Mandi 2pcs", price: 9000 },
+    { id: 9, name: "Deterjen 800g", price: 16000 },
+    { id: 10, name: "Garam 1kg", price: 5000 },
+    { id: 11, name: "Kecap Manis 275ml", price: 13000 },
+    { id: 12, name: "Susu Kental Manis", price: 14000 },
+    { id: 13, name: "Roti Tawar", price: 17000 },
+    { id: 14, name: "Air Mineral 600ml", price: 4000 },
+    { id: 15, name: "Sambal Botol", price: 12000 },
+    { id: 16, name: "Sikat Gigi 2pcs", price: 8000 }
 ];
 
 // ==========================================
@@ -136,18 +136,17 @@ function renderPosCatalog() {
         return;
     }
 
-    filtered.forEach(prod => {
+filtered.forEach(prod => {
         const div = document.createElement('div');
         div.className = 'pos-product';
         div.onclick = () => addToPosCart(prod.id);
         div.innerHTML = `
-            <div class="pos-product-icon">${prod.icon}</div>
             <div class="pos-product-name">${prod.name}</div>
             <div class="pos-product-price">Rp ${prod.price.toLocaleString('id-ID')}</div>
+            <div class="pos-product-add"><i class="ph ph-plus-circle"></i></div>
         `;
         container.appendChild(div);
     });
-}
 
 function addToPosCart(productId) {
     const product = POS_PRODUCTS.find(p => p.id === productId);
