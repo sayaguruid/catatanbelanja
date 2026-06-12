@@ -26,7 +26,7 @@ let lastRevealTime = 0; // PERBAIKAN BUG: Mencegah shake detection bentrok denga
 
 // --- DATABASE PRODUK KASIR (FAKE) ---
 const POS_PRODUCTS = [
-    { id: 1, name: "Beras Premium 5kg", price: 72000, icon: "🍚" },
+    { id: 1, name: "Beras Premium 5kg", price: 72000 },
     { id: 2, name: "Minyak Goreng 2L", price: 38000, icon: "🛢️" },
     { id: 3, name: "Gula Pasir 1kg", price: 17000, icon: "🍬" },
     { id: 4, name: "Telur Ayam 1kg", price: 29000, icon: "🥚" },
