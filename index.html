@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catatan Belanja Sembako</title> <!-- Diubah untuk menyamar -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>POS Kasir - Sembako Makmur</title> <!-- Menyamar sebagai Aplikasi Kasir -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     
@@ -12,26 +12,75 @@
 </head>
 <body>
 
-    <!-- ====== FAKE VIEW: CATATAN BELANJA SEMBAKO ====== -->
+    <!-- ====== FAKE VIEW: SISTEM KASIR POS ====== -->
     <div id="fake-view">
-        <div class="fake-app">
-            <div class="fake-header" id="fake-header-tap">
-                <i class="ph ph-shopping-cart" style="font-size:2rem; color:#22c55e;"></i>
-                <div>
-                    <h2 style="margin:0; font-size:1.2rem; color:#1e293b;">Catatan Belanja</h2>
-                    <p style="margin:0; font-size:0.7rem; color:#94a3b8;" id="fake-date"></p>
+        <div class="pos-container">
+            <div class="pos-header" id="pos-header-tap">
+                <div class="pos-brand">
+                    <i class="ph ph-storefront" id="pos-logo-press" style="font-size: 1.8rem; cursor: pointer;"></i>
+                    <div>
+                        <h1 style="margin:0; font-size:1.1rem;">Kasir Sembako</h1>
+                        <p style="margin:0; font-size:0.7rem; opacity:0.7;" id="pos-clock">Senin, 01 Jan 2024 - 00:00</p>
+                    </div>
+                </div>
+                <div class="pos-cashier-info">
+                    <i class="ph ph-user-circle"></i> Kasir 01
                 </div>
             </div>
-            <div class="fake-list" id="fake-list"></div>
-            <div class="fake-add-row">
-                <input type="text" id="fake-new-item" placeholder="Tambah item..." class="fake-input">
-                <input type="text" id="fake-new-price" placeholder="Harga" inputmode="numeric" class="fake-input" style="width:90px; text-align:right;">
-                <button class="fake-add-btn" onclick="fakeAddItem()">+</button>
+            
+            <div class="pos-main">
+                <div class="pos-catalog">
+                    <div class="pos-search">
+                        <i class="ph ph-magnifying-glass"></i>
+                        <input type="text" id="pos-search-input" placeholder="Cari produk atau scan barcode..." oninput="renderPosCatalog()">
+                    </div>
+                    <div class="pos-grid" id="pos-grid"></div>
+                </div>
+                
+                <div class="pos-sidebar">
+                    <div class="pos-cart-header">
+                        <h3 style="margin:0">Keranjang Belanja</h3>
+                        <button class="pos-clear-btn" onclick="posClearCart()"><i class="ph ph-trash"></i> Hapus</button>
+                    </div>
+                    <div class="pos-cart-list" id="pos-cart-list">
+                        <div class="pos-empty-cart">
+                            <i class="ph ph-shopping-bag-open" style="font-size:3rem; opacity:0.3;"></i>
+                            <p>Belum ada item</p>
+                        </div>
+                    </div>
+                    <div class="pos-summary">
+                        <div class="pos-summary-row">
+                            <span>Subtotal</span>
+                            <span id="pos-subtotal">Rp 0</span>
+                        </div>
+                        <div class="pos-summary-row" style="color:#22c55e;">
+                            <span>Diskon</span>
+                            <span id="pos-discount">- Rp 0</span>
+                        </div>
+                        <div class="pos-summary-row total">
+                            <span>TOTAL</span>
+                            <span id="pos-total">Rp 0</span>
+                        </div>
+                        <button class="pos-pay-btn" onclick="posPay()">
+                            <i class="ph ph-money-wavy"></i> BAYAR (F9)
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="fake-total">
-                <span>Total Belanja</span>
-                <span id="fake-total-value">Rp 0</span>
+        </div>
+    </div>
+
+    <!-- ====== MODAL STRUK KASIR ====== -->
+    <div id="pos-receipt-modal" class="pos-modal">
+        <div class="pos-receipt-content">
+            <h2 style="margin-top:0; color:#1e293b;">Pembayaran Berhasil!</h2>
+            <div style="text-align:center; margin: 1.5rem 0;">
+                <i class="ph ph-check-circle" style="font-size:4rem; color:#22c55e;"></i>
+                <h1 style="margin:0.5rem 0; color:#1e293b;" id="receipt-total-display">Rp 0</h1>
+                <p style="color:#64748b; margin:0;">Tunai - Kembalian: Rp 0</p>
             </div>
+            <div class="pos-receipt-box" id="receipt-details"></div>
+            <button style="width:100%; padding:1rem; background:#1e293b; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-top:1rem;" onclick="closePosReceipt()">Selesai & Cetak Struk</button>
         </div>
     </div>
 
@@ -43,11 +92,7 @@
             <p style="color: var(--text-light); margin-bottom: 2rem;">Masukkan Password</p>
             <input type="password" id="login-pass" class="login-input" placeholder="PASSWORD">
             <button class="btn btn-primary" style="width:100%" onclick="doLogin()">MASUK</button>
-            
-            <!-- Area Pesan Error -->
             <p id="login-msg" style="margin-top:1rem; color: var(--danger); font-size:0.9rem; min-height:1.2rem;"></p>
-
-            <!-- LINK PORTAL DI BAWAH TOMBOL LOGIN -->
             <div style="margin-top: 1.5rem; text-align: center;">
                 <a href="https://catatan.balanja.co.id/ku/" target="_blank" class="login-footer-link" style="display:inline-flex; align-items:center; gap:0.5rem; text-decoration:none; color:var(--text-light); font-size:0.85rem; font-weight:600; transition: color 0.2s;">
                     <i class="ph ph-book-open"></i> Tulis Jurnal
@@ -227,6 +272,11 @@
     </div>
 
     <div id="toast" class="toast">Notifikasi</div>
+
+    <!-- FLOATING PANIC BUTTON -->
+    <div id="panic-btn" onclick="hideToFake()">
+        <i class="ph ph-house"></i>
+    </div>
 
     <!-- MODAL CONFIG -->
     <div id="config-modal" class="modal-overlay">
